@@ -797,8 +797,9 @@ namespace PolyVideoOSRestAPI
         /// Add all status polling commands to the queue to send
         /// </summary>
         private void EnqueueStatusPollingCommands()
-        {            
+        {
             sendCommandProcessingQueue.Enqueue(GetCommand(APIGlobal.ApiSystemModeStatus));
+            //sendCommandProcessingQueue.Enqueue(GetCommand(APIGlobal.ApiSystemProviderStatus));
             //PrintDebugMessage("{0}.EnqueueStatusPollingCommands( ) : Adding Commands to Queue[{1}]", this.GetType().Name, sendCommandProcessingQueue.Count);
         }
 
