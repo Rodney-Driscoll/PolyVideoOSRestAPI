@@ -39,10 +39,11 @@ namespace PolyVideoOSRestAPI
         public static readonly ushort DeviceModeStop  = 2;
 
         // rest path labels
-        public static readonly string ApiSession                   = "session";            // login and logout of the session
-        public static readonly string ApiDeviceMode               = "system/mode/device"; // set the device mode
-        public static readonly string ApiReboot                    = "system/reboot";      // reboot the device
-        public static readonly string ApiSystemModeStatus        = "system/mode";        // Get the device mode status
+        public static readonly string ApiSession                = "session";            // login and logout of the session
+        public static readonly string ApiDeviceMode             = "system/mode/device"; // set the device mode
+        public static readonly string ApiReboot                 = "system/reboot";      // reboot the device
+        public static readonly string ApiSystemProviderStatus   = "system/mode";        // Get the device provider status
+        public static readonly string ApiSystemModeStatus       = "system/mode/device"; // Get the device mode status
 
         /// <summary>
         /// Combine the API base path with the subpath provided to create the full path for the REST request

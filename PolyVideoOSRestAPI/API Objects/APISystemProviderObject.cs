@@ -32,21 +32,40 @@ using Newtonsoft.Json.Linq;
 
 namespace PolyVideoOSRestAPI.API_Objects
 {
+
     /// <summary>
     /// Information about the current system mode
     /// </summary>
-    public class APISystemModeObject : APIObjectBase
+    public class APISystemProviderObject : APIObjectBase
     {
-        [JsonProperty("result")]
-        public string SystemMode { get; set; }
+        [JsonProperty("activePersona")]
+        public string ActivePersona { get; set; }
+
+        [JsonProperty("app")]
+        public string App { get; set; }
+
+        [JsonProperty("appLocked")]
+        public bool AppLocked { get; set; }
+
+        [JsonProperty("appPersona")]
+        public string AppPersona { get; set; }
+
+        [JsonProperty("ecoMode")]
+        public string EcoMode { get; set; }
+
+        [JsonProperty("mode")]
+        public string Mode { get; set; }
+
+        [JsonProperty("polyCallControl")]
+        public bool PolyCallControl { get; set; }
 
         [JsonIgnore]
         public bool DeviceModeEnabled
         {
             get
             {
-                if (SystemMode != null)
-                    return SystemMode.ToLower().Equals("true");
+                if (ActivePersona != null)
+                    return ActivePersona.ToLower().Equals("camuvc");
                 else
                     return false;
             }
@@ -55,7 +74,14 @@ namespace PolyVideoOSRestAPI.API_Objects
         public override string ToString()
         {
             StringBuilder str = new StringBuilder();
-            str.Append("SystemMode = " + SystemMode);
+            str.Append("activePersona = " + ActivePersona);
+            str.Append(", app = " + App);
+            str.Append(", appLocked = " + AppLocked);
+            str.Append(", appPersona = " + AppPersona);
+            str.Append(", ecoMode = " + EcoMode);
+            str.Append(", mode = " + Mode);
+            str.Append(", polyCallControl = " + PolyCallControl);
+
             return str.ToString();
         }
     }

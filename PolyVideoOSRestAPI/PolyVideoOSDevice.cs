@@ -50,6 +50,7 @@ namespace PolyVideoOSRestAPI
         // Simpl + delegates
         public event EventHandler<SessionStateChangedEventArgs> OnSessionStateChanged;
         public event EventHandler<UShortChangeEventArgs> OnDevideModeChanged;
+        public event EventHandler<StringChangeEventArgs> OnDeviceProviderChanged;
         public event EventHandler<ErrorChangeEventArgs> OnErrorStateChanged;
 
         //public event UShortStateChangedDelegate OnGenericUshortChanged;
@@ -537,6 +538,21 @@ namespace PolyVideoOSRestAPI
             CrestronInvoke.BeginInvoke(thread => OnDevideModeChanged(this, new UShortChangeEventArgs(SimplHelperFunctions.ConvertBooleanToUShort(eventArgs.SystemMode.DeviceModeEnabled), 0)));
 
             //TODO : Add additional logic for feedback of whether the video OS device is setup for Poly, Zoom, Teams, etc...
+        }
+
+        /// <summary>
+        /// Handle response when the provider mode changes
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="eventArgs"></param>
+        private void SystemProviderStatusChanged(object sender, APISystemProviderStateEventArgs eventArgs)
+        {
+            PrintDebugMessage("{0}.SystemProviderStatusChanged( ) : Device Mode = {1}", this.GetType().Name, eventArgs.SystemProvider);
+
+            // send event when the device mode changes. this indicates whether USB device mode is on or off
+            CrestronInvoke.BeginInvoke(thread => OnDeviceProviderChanged(this, new StringChangeEventArgs(eventArgs.SystemProvider.ActivePersona, 0)));
+
+            //TODO : Add additional logic for feedback of whether the video OS device is setup for Poly, Zoom, Teams, etc...
         } 
         #endregion
 
@@ -676,8 +692,12 @@ namespace PolyVideoOSRestAPI
             APICommand command = new APICommand(APIGlobal.ApiSession, eCommandInputFormatType.BODY_JSON, ((APIInputCommand)apiSession), null, RequestType.Post, true, true, 10);
             apiCommandCollection.Add(command.Path, command);
 
-            // device mode status : gets device mode, provider, etc.. ( is the device setup for Poly, Zoom, etc... )
+            // device mode status : gets device mode, provider, etc.. ( is the USB device mode enabled etc... )
             command = new APICommand(APIGlobal.ApiSystemModeStatus, eCommandInputFormatType.NONE, null, null, RequestType.Get, true, true, 10);
+            apiCommandCollection.Add(command.Path, command);
+
+            // device provider status : gets provider mode, provider, etc.. ( is the device setup for Poly, Zoom, etc... )
+            command = new APICommand(APIGlobal.ApiSystemProviderStatus, eCommandInputFormatType.NONE, null, null, RequestType.Get, true, true, 10);
             apiCommandCollection.Add(command.Path, command);
 
             // add additional command objects
@@ -708,6 +728,13 @@ namespace PolyVideoOSRestAPI
             systemModeStatusHandler.OnErrorResponseReceived += ReponseHandlerServerErrorResponseReceived;
             systemModeStatusHandler.OnSystemModeChanged += SystemModeStatusChanged;
             responseHandlersCollection.Add(systemModeStatusHandler.GetFullAPIPath(), systemModeStatusHandler);
+
+            // device provider status
+            SystemProviderStatusResponseHandler systemProviderStatusHandler = new SystemProviderStatusResponseHandler(apiSession, APIGlobal.ApiSystemProviderStatus);
+            systemProviderStatusHandler.OnUnknownResponseReceived += ResponseHandlerUnhandledResponseReceived;
+            systemProviderStatusHandler.OnErrorResponseReceived += ReponseHandlerServerErrorResponseReceived;
+            systemProviderStatusHandler.OnSystemProviderChanged += SystemProviderStatusChanged;
+            responseHandlersCollection.Add(systemProviderStatusHandler.GetFullAPIPath(), systemProviderStatusHandler);
 
             // add additional handlers to collection
         } 

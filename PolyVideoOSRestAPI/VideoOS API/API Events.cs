@@ -115,6 +115,23 @@ namespace PolyVideoOSRestAPI
     }
 
     /// <summary>
+    /// Event indicating when the device provider status changes
+    /// </summary>
+    public class APISystemProviderStateEventArgs : APIEventArgsBase
+    {
+        public APISystemProviderObject SystemProvider { get; private set; }
+
+        // default constructor for simpl+
+        public APISystemProviderStateEventArgs() { }
+
+        public APISystemProviderStateEventArgs(APISystemProviderObject systemProvider, WebResponse response)
+        {
+            SystemProvider = systemProvider;
+            Response = response;
+        }
+    }
+
+    /// <summary>
     /// Event to handle generic responses
     /// </summary>
     public class APIGenericStateEventArgs : APIEventArgsBase

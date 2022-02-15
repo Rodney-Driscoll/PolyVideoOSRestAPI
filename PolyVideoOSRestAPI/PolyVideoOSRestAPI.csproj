@@ -65,8 +65,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="API Objects\APISessionStateObject.cs" />
-    <Compile Include="API Objects\APISystemModeObject.cs" />
+    <Compile Include="API Objects\APISystemProviderObject.cs" />
     <Compile Include="API Objects\APIObjectBase.cs" />
+    <Compile Include="API Objects\APISystemModeObject.cs" />
     <Compile Include="Commands\API Commands.cs" />
     <Compile Include="Debug and Logging\Debug Definitions.cs" />
     <Compile Include="Events\Common Event Definitions.cs" />
@@ -89,6 +90,7 @@
     <Compile Include="Queue Processing\IQueue.cs" />
     <Compile Include="Queue Processing\ProcessingQueueThreadBase.cs" />
     <Compile Include="Queue Processing\ResponseHandlerProcessingQueue.cs" />
+    <Compile Include="Response Handlers\SystemProviderStatusResponseHandler.cs" />
     <Compile Include="Response Handlers\SystemModeStatusResponseHandler.cs" />
     <Compile Include="Response Handlers\DefaultResponseHandler.cs" />
     <Compile Include="Response Handlers\SessionResponseHandler.cs" />
