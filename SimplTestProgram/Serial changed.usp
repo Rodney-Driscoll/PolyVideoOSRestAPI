@@ -1,0 +1,52 @@
+/*******************************************************************************************
+  SIMPL+ Module Information
+*******************************************************************************************
+// <copyright file="Serial changed.usp" company="AVPlus Integration Pty Ltd">
+//     {c} Licensed to AV Plus Integration Pty Ltd 2017.
+//     http://www.avplus.net.au
+//     20180808 Rod Driscoll
+//     e: rdriscoll@avplus.net.au
+//     m: +61 428 969 608
+//     All source code excluding third party packages remains the sole property of AV Plus Integration Pty Ltd.
+//     Source code may not be implemented, extended, modified, copied, re-distributed or deployed
+//     without the express writtten consent of AV Plus Integration Pty Ltd.
+//     For more details please refer to the LICENSE file located in the root folder of the project source code.
+// </copyright>
+*******************************************************************************************
+  Compiler Directives
+*******************************************************************************************/
+#CATEGORY "2" // Conditional
+#DEFAULT_VOLATILE
+/*******************************************************************************************
+  DIGITAL, ANALOG and SERIAL INPUTS and OUTPUTS
+*******************************************************************************************/
+STRING_INPUT In[255];
+
+DIGITAL_OUTPUT EqualFb, NotEqualFb, EqualPulse, NotEqualPulse;
+/*******************************************************************************************
+  Global Variables
+*******************************************************************************************/
+string sValue[255];
+/*******************************************************************************************
+  Functions
+*******************************************************************************************/
+/*******************************************************************************************
+  Event Handlers
+*******************************************************************************************/
+CHANGE In   {
+	EqualFb    = (In  = sValue);
+	NotEqualFb = (In != sValue);
+	if(In != sValue) {
+		sValue = In;
+		pulse(1, NotEqualPulse); 
+	}
+	else
+		pulse(1, EqualPulse); 
+}
+/*******************************************************************************************
+  Main()
+*******************************************************************************************
+Function Main() {
+    WaitForInitializationComplete();
+}
+*/

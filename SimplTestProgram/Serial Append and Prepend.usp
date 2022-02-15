@@ -1,0 +1,67 @@
+/*******************************************************************************************
+  SIMPL+ Module Information
+*******************************************************************************************
+rdriscoll@avplus.net.au
+20150410 v1.0 RRD
+*******************************************************************************************
+  Compiler Directives
+*******************************************************************************************/
+#CATEGORY "10" // Serial
+#HINT "Wrap text inside Start and End strings"
+#DEFINE_CONSTANT MAX_STRINGS 20
+#DEFINE_CONSTANT MAX_STRING_SIZE 253
+/*******************************************************************************************
+  DIGITAL, ANALOG and SERIAL INPUTS and OUTPUTS
+*******************************************************************************************/
+STRING_INPUT StartText[MAX_STRING_SIZE], EndText[MAX_STRING_SIZE], In[MAX_STRINGS,1][MAX_STRING_SIZE];
+
+STRING_OUTPUT _SKIP_, _SKIP_, Out[MAX_STRINGS,1];
+/*******************************************************************************************
+  Global Variables
+*******************************************************************************************/
+STRING sLastValue[MAX_STRING_SIZE][MAX_STRINGS];
+/*******************************************************************************************
+  Functions
+*******************************************************************************************/
+integer_Function UpdateOutput(integer iIndex) {
+	integer changed_;
+	//print("in[%u] = %s", iIndex, In[iIndex]);
+	if(IsSignalDefined(Out[iIndex])) {
+		MakeString(Out[iIndex], "%s%s%s", StartText, In[iIndex], EndText);
+/*
+		MakeString(sLastValue[iIndex], "%s%s%s", StartText, In[iIndex], EndText);
+		if(sLastValue[iIndex] = Out[iIndex])
+			changed_ = 1;
+		else
+			changed_ = 0;
+		Out[iIndex] = sLastValue[iIndex];
+*/
+	}
+	return(changed_);
+}
+
+Function UpdateAll() {
+	integer i, changed_;
+	changed_ = 0;
+	for(i=1 to MAX_STRINGS) {
+		if(UpdateOutput(i) > 1)
+			changed_ = 1;
+	}
+}
+/*******************************************************************************************
+  Event Handlers
+*******************************************************************************************/
+change In {
+		UpdateOutput(GetLastModifiedArrayIndex());
+}
+
+change StartText { UpdateAll(); }
+change EndText   { UpdateAll(); }
+
+/*******************************************************************************************
+  Main()
+*******************************************************************************************/
+Function Main() {
+    WaitForInitializationComplete();
+	UpdateAll();
+}

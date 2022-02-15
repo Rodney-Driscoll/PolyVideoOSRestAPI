@@ -195,7 +195,7 @@ EventHandler OnErrorStateChangedCallback( PolyVideoOSDevice device, ErrorChangeE
 *******************************************************************************************/
 PUSH Debug
 {
-		videoOSDevice.DebugState = 1;
+		videoOSDevice.DebugState = 4;
 }
  
 RELEASE Debug

@@ -223,3 +223,4 @@ UpgradeLog*.htm
 
 # Microsoft Fakes
 FakesAssemblies/
+SimplTestProgram/log.txt

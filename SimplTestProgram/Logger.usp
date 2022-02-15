@@ -1,0 +1,246 @@
+/*******************************************************************************************
+  SIMPL+ Module Information
+*******************************************************************************************/
+// <copyright file="File ReadLines.usp" company="AVPlus Integration Pty Ltd">
+//     {c} Licensed to AV Plus Integration Pty Ltd 2014.
+//     http://www.avplus.net.au
+//     20140709 Rod Driscoll
+//     e: rdriscoll@avplus.net.au
+//     m: +61 428 969 608
+//     All source code excluding third party packages remains the sole property of AV Plus Integration Pty Ltd.
+//     Source code may not be implemented, extended, modified, copied, re-distributed or deployed
+//     without the express writtten consent of AV Plus Integration Pty Ltd.
+//     For more details please refer to the LICENSE file located in the root folder of the project source code.
+// </copyright>
+
+/*******************************************************************************************
+  Compiler Directives
+*******************************************************************************************/
+// #SYMBOL_NAME "Data logger.usp" // always comment out to avoid naming conflicts
+#DEFINE_CONSTANT MOD_NAME "Logger"
+#HINT "Log serial and analog data to a file"
+// #DEFINE_CONSTANT
+#DEFAULT_VOLATILE
+#CATEGORY "3" // Debugging
+// #DIGITAL_EXPAND 
+// #ANALOG_SERIAL_EXPAND 
+// #OUTPUT_SHIFT 
+// #DEFAULT_NONVOLATILE
+#DEFAULT_VOLATILE // always
+#ENABLE_STACK_CHECKING
+/*
+#HELP_BEGIN
+#HELP_END
+*/
+                
+#DEFINE_CONSTANT DATE_FORMAT_MM_DD_YYYY 1
+#DEFINE_CONSTANT DATE_FORMAT_DD_MM_YYYY 2
+#DEFINE_CONSTANT DATE_FORMAT_YYYY_MM_DD 3
+#DEFINE_CONSTANT DATE_FORMAT_MM_DD_YY 4
+
+#DEFINE_CONSTANT MAX_STRING_SIZE 1024
+#DEFINE_CONSTANT MAX_BUFFER_SIZE 2048
+
+#DEFINE_CONSTANT DEBUG_LEVEL 			1                                                                    
+/*******************************************************************************************
+  Include Libraries
+*******************************************************************************************/
+// #CRESTRON_LIBRARY ""
+// #USER_LIBRARY ""
+
+/*******************************************************************************************
+  DIGITAL, ANALOG and SERIAL INPUTS and OUTPUTS
+*******************************************************************************************/
+DIGITAL_INPUT TRIGGER, TIME_STAMP_ENABLE, FLUSH_QUEUE;
+STRING_INPUT FILE_NAME[64];
+BUFFER_INPUT LOGGED_MESSAGE[MAX_STRING_SIZE], CONSOLE_Rx$[MAX_STRING_SIZE];
+
+DIGITAL_OUTPUT ERROR, _SKIP_, QUEUE_ERROR;
+// ANALOG_OUTPUT 
+STRING_OUTPUT _SKIP_, _SKIP_, CONSOLE_Tx$;
+
+/*******************************************************************************************
+  Global Variables
+*******************************************************************************************/
+INTEGER iCreateDisk, iBusy, iLogBusy;
+// LONG_INTEGER
+STRING  sFileName[64], sDebug[255], sLogString[MAX_BUFFER_SIZE];
+// SIGNED_INTEGER;
+// SIGNED_LONG_INTEGER
+ 
+/*******************************************************************************************
+  Functions
+*******************************************************************************************/
+Function Debug(string str, integer mask) {
+	string sDebug_[255];
+	if(mask & Debug_level) {
+		if(len(GetSymbolReferenceName()))
+			MakeString(sDebug_, "%d:%s:%s: %s\n", GetProgramNumber(), MOD_NAME, GetSymbolReferenceName(), str);
+		else
+			MakeString(sDebug_, "%d:%s: %s\n", GetProgramNumber(), MOD_NAME, str);
+		Print("%s", sDebug_);
+		if(mask > 1)
+			GenerateUserNotice("%s", sDebug_);
+	} 
+}
+
+FUNCTION WriteToFile(STRING sFilePath) {                         
+	SIGNED_INTEGER siFileHandle_, siFileWrite_;
+
+	MakeString(sDebug,"WriteToFile(%s), len: %d", sFilePath, len(sLogString));
+	Debug(sDebug, 1);
+	if(len(sLogString))
+		Debug(sLogString, 1);
+	StartFileOperations();
+	siFileHandle_ = FileOpen (sFilePath, _O_WRONLY | _O_APPEND | _O_CREAT | _O_TEXT);   
+	IF (siFileHandle_ >= 0)  {		
+		siFileWrite_ = FileWrite(siFileHandle_, sLogString, LEN(sLogString));
+		IF(siFileWrite_ < 0) {
+			if(len(sLogString))
+				sLogString = sLogString + "\n";
+			ERROR = 1;
+			MakeString(sDebug, "Error %d Writing %s, FileHandle: %d", siFileWrite_, FILE_NAME, siFileHandle_);
+			Debug(sDebug, 3);
+			Debug(sLogString, 3);
+		}
+		else {
+			ERROR = 0;
+			MakeString(sDebug, "Success %d Writing %s, FileHandle: %d, len: %d", siFileWrite_, FILE_NAME, siFileHandle_, len(sLogString));
+			Debug(sDebug, 1);
+			Debug(sLogString, 1);
+			sLogString = "";
+			IF (FileClose(siFileHandle_) <> 0) {
+				ERROR = 1;
+				MakeString(sDebug, "Error %d Closing %s, FileHandle: %d", siFileWrite_, FILE_NAME, siFileHandle_);
+				Debug(sDebug, 1);
+			}
+		}
+ 	}
+	ELSE {
+		if(len(sLogString))
+			sLogString = sLogString + "\n";
+		ERROR = 1;
+		MakeString(sDebug, "Error Opening: %s, FileHandle: %d", sFilePath, siFileHandle_);
+		Debug(sDebug, 1);
+		Debug(sLogString, 3);
+	}
+	EndFileOperations();
+}
+
+FUNCTION LogToFile(STRING sFilePath) {  
+	STRING sFilePath_[100];
+
+	//MakeString(sDebug,"LogToFile(%s):\n%s", sFilePath, sLogString);
+	//Debug(sDebug, 1);
+	IF(LEN(sFileName)<1)
+		sFilePath_ = sFilePath + "Log.txt"; 
+	ELSE
+		sFilePath_ = sFilePath + sFileName; 	
+	IF (len(sLogString) > 0)
+		WriteToFile(sFilePath_);         
+}
+
+FUNCTION Log() {                         
+	STRING sFilePath_[100], sLogString_[MAX_STRING_SIZE];
+
+	//MakeString(sDebug,"Log(): %s", LOGGED_MESSAGE);
+	//Debug(sDebug, 1);
+	IF(TIME_STAMP_ENABLE) 
+		sLogString_ = DATE(DATE_FORMAT_YYYY_MM_DD) + "-" + TIME() + ": ";
+	ELSE
+		sLogString_ = "";
+	if(len(LOGGED_MESSAGE) + len(sLogString_) > MAX_STRING_SIZE)  {
+		MakeString(sDebug,"Error: log message too long: %d. Max length is: %d", len(LOGGED_MESSAGE), MAX_STRING_SIZE);
+		Debug(sDebug, 1);
+		ERROR = 1;		
+	}
+	else {
+		sLogString_ = sLogString_ + LOGGED_MESSAGE; 
+		IF (RIGHT(sLogString_, 2) != "\x0D\x0A")
+			sLogString_ = sLogString_ + "\n";
+		if(len(sLogString) + len(sLogString_) > MAX_STRING_SIZE) {
+			MakeString(sDebug,"Error: log message queue too long, queue len: %d, new message len: %d. Max length is: %d", len(sLogString), len(sLogString_), MAX_STRING_SIZE);
+			Debug(sDebug, 1);
+			MakeString(sDebug,"queue full, new message:\n%s", sLogString_);
+			Debug(sDebug, 3);	
+			pulse(1, QUEUE_ERROR);
+		}
+		else {
+			sLogString = sLogString + sLogString_;
+			CLEARBUFFER(LOGGED_MESSAGE);
+		}
+	}
+
+	IF(CheckForDisk() = 1)
+		sFilePath_ = "\\CF0\\";
+	ELSE {  
+		sFilePath_ = "\\NVRAM\\";
+		IF(!CheckForNVRAMDisk() && !iCreateDisk){   
+			iCreateDisk = 1;
+			CONSOLE_Tx$ = "\nNVRAMDISK 64K\n";
+		}
+	}
+	IF (!iCreateDisk) {
+		//LogToFile(sFilePath_);
+		LogToFile(""); // processor file structure is has been changed so can't automate paths any more
+	}
+} 
+
+FUNCTION ParseConsole() { 
+	STRING sRxData_[MAX_STRING_SIZE];                                                 
+
+	iBusy = 1;
+	sRxData_ = CONSOLE_Rx$;
+	// Response from console...
+	// WARNING: This command will erase all your files on the NVRAM.
+	// Do you want to continue (Y or N)? 
+	IF (FIND("Do you want to continue (Y or N)? ", sRxData_)) {
+		sRxData_ = REMOVE("Do you want to continue (Y or N)? ", CONSOLE_Rx$);
+		CONSOLE_Tx$ = "Y\n";
+		iCreateDisk = iCreateDisk + 1;
+	}  
+	// Response from console...   
+	// NVRAM filesystem successfully initialized to 64K 
+	ELSE IF (FIND("NVRAM filesystem successfully initialized to 64K", sRxData_)) {
+		iCreateDisk = 0;
+		//LogToFile("\\NVRAM\\");
+	} 
+	iBusy = 0;
+}
+
+/*******************************************************************************************
+  Event Handlers
+*******************************************************************************************/
+PUSH TRIGGER
+{
+	Log();
+}
+
+CHANGE CONSOLE_Rx$
+{
+	IF(!iCreateDisk)
+		CLEARBUFFER(CONSOLE_Rx$);
+	ELSE
+		IF(!iBusy)
+			ParseConsole();
+}
+
+CHANGE FILE_NAME
+{
+	if(len(FILE_NAME))
+		sFileName = FILE_NAME;
+}
+
+PUSH FLUSH_QUEUE {
+	MakeString(sDebug,"flushing queue, len: %d, queue:\n%s", len(sLogString), sLogString);
+	Debug(sDebug, 3);
+}
+/*******************************************************************************************
+  Main()
+*******************************************************************************************/                             
+FUNCTION Main ()
+{                                  
+	iBusy = 0;
+	iCreateDisk = 0;
+	WaitForInitializationComplete();
+}
